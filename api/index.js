@@ -1,9 +1,10 @@
+require('dotenv').config();
 const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const NEON_DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_zNm4d6neYoub@ep-mute-recipe-ax52n483-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require";
-const JWT_SECRET = process.env.JWT_SECRET || "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+const NEON_DB_URL = process.env.DATABASE_URL;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const pool = new Pool({
   connectionString: NEON_DB_URL,
