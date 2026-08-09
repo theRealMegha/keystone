@@ -1,6 +1,6 @@
 import { AuthResponse, Customer, DashboardMetrics, Part, Site, User, WorkOrder, WorkOrderStatus, Priority } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || (typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174') ? 'http://localhost:8080/api' : '/api');
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 function getHeaders(): HeadersInit {
   const token = localStorage.getItem('keystone_token');
