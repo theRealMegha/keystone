@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Customer, Site } from '../types';
 import { api } from '../services/api';
-import { Building2, Plus, Mail, Phone, MapPin, X } from 'lucide-react';
+import { Building2, Plus, Mail, Phone, MapPin, X, Building, Map } from 'lucide-react';
+import { AddressInput } from '../components/AddressInput';
 
-export const CustomerManagementPage: React.FC = () => {
+interface CustomerManagementPageProps {
+  viewMode?: 'customers' | 'sites' | 'all';
+}
+
+export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({ viewMode = 'all' }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,106 +94,132 @@ export const CustomerManagementPage: React.FC = () => {
     setFormError(null);
   };
 
+  const isCustomersOnly = viewMode === 'customers';
+  const isSitesOnly = viewMode === 'sites';
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+    <div className="space-y-7">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-white/5">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
-              <Building2 size={22} />
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              {isSitesOnly ? <MapPin size={20} /> : <Building2 size={20} />}
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-white tracking-tight">Customers & Facility Sites</h1>
-              <p className="text-xs text-slate-400">Manage client organizations, billing contacts, and building locations</p>
+              <h1 className="text-2xl font-black text-white tracking-tight">
+                {isCustomersOnly ? 'Client Customer Organizations' : isSitesOnly ? 'Facility Building Sites' : 'Customers & Facility Sites'}
+              </h1>
+              <p className="text-xs text-slate-400">
+                {isCustomersOnly
+                  ? 'Manage client accounts, billing contacts, HQ addresses, and organization codes'
+                  : isSitesOnly
+                  ? 'Manage physical building sites, customer site assignments, and on-site contact persons'
+                  : 'Manage client organizations, billing contacts, and building locations'}
+              </p>
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => { setModalType('customer'); resetForm(); setShowModal(true); }}
-            className="ks-btn-primary h-10 text-xs px-4 w-auto"
-          >
-            <Plus size={16} /> Add Customer
-          </button>
-          <button
-            onClick={() => { setModalType('site'); resetForm(); setShowModal(true); }}
-            className="ks-btn-secondary h-10 text-xs px-4"
-          >
-            <Plus size={16} /> Add Site
-          </button>
+        <div className="flex items-center gap-2.5">
+          {(!isSitesOnly) && (
+            <button
+              onClick={() => { setModalType('customer'); resetForm(); setShowModal(true); }}
+              className="ks-btn-primary h-9 text-xs px-4"
+            >
+              <Plus size={15} /> Add Customer
+            </button>
+          )}
+          {(!isCustomersOnly) && (
+            <button
+              onClick={() => { setModalType('site'); resetForm(); setShowModal(true); }}
+              className={isSitesOnly ? "ks-btn-primary h-9 text-xs px-4" : "ks-btn-secondary h-9 text-xs px-4"}
+            >
+              <Plus size={15} /> Add Site
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Customers List */}
-        <div className="glass-card p-6 border border-slate-800 space-y-4 shadow-md">
-          <div className="flex items-center justify-between">
-            <h2 className="font-extrabold text-base text-white">Client Organizations</h2>
-            <span className="text-xs font-bold text-blue-400 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-              {customers.length} Accounts
-            </span>
-          </div>
-
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-            {customers.map(c => (
-              <div key={c.id} className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2.5 hover:border-slate-700 transition-all">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-white">{c.name}</h3>
-                  <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950/60 px-2.5 py-0.5 rounded-md border border-blue-500/30">
-                    {c.code}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-400 space-y-1.5 pt-1">
-                  <div className="flex items-center gap-2"><Mail size={14} className="text-slate-500" /> <span>{c.contactEmail}</span></div>
-                  {c.contactPhone && <div className="flex items-center gap-2"><Phone size={14} className="text-slate-500" /> <span>{c.contactPhone}</span></div>}
-                  {c.address && <div className="flex items-center gap-2"><MapPin size={14} className="text-slate-500" /> <span>{c.address}</span></div>}
-                </div>
+      <div className={isCustomersOnly || isSitesOnly ? "space-y-6" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
+        {/* Customers List Card */}
+        {(!isSitesOnly) && (
+          <div className="glass-card p-5 border border-white/10 space-y-4 shadow-lg">
+            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <Building size={16} className="text-cyan-400" />
+                <h2 className="font-extrabold text-sm text-white">Client Organizations</h2>
               </div>
-            ))}
-          </div>
-        </div>
+              <span className="text-xs font-bold text-cyan-400 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25">
+                {customers.length} Accounts
+              </span>
+            </div>
 
-        {/* Sites List */}
-        <div className="glass-card p-6 border border-slate-800 space-y-4 shadow-md">
-          <div className="flex items-center justify-between">
-            <h2 className="font-extrabold text-base text-white">Building Sites</h2>
-            <span className="text-xs font-bold text-indigo-400 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-              {sites.length} Locations
-            </span>
+            <div className={isCustomersOnly ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3 max-h-[620px] overflow-y-auto pr-1"}>
+              {customers.map(c => (
+                <div key={c.id} className="bg-slate-950/70 p-4 rounded-xl border border-white/5 space-y-2.5 hover:border-cyan-500/40 transition-all shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-white">{c.name}</h3>
+                    <span className="font-mono text-[11px] font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-md border border-cyan-500/20">
+                      {c.code}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1.5 pt-1">
+                    <div className="flex items-center gap-2"><Mail size={13} className="text-slate-500 shrink-0" /> <span className="truncate">{c.contactEmail}</span></div>
+                    {c.contactPhone && <div className="flex items-center gap-2"><Phone size={13} className="text-slate-500 shrink-0" /> <span>{c.contactPhone}</span></div>}
+                    {c.address && <div className="flex items-center gap-2"><MapPin size={13} className="text-slate-500 shrink-0" /> <span className="truncate">{c.address}</span></div>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
 
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-            {sites.map(s => (
-              <div key={s.id} className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2.5 hover:border-slate-700 transition-all">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-white">{s.name}</h3>
-                  <span className="text-xs font-semibold text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded-md border border-slate-800">{s.customerName}</span>
-                </div>
-                <div className="text-xs text-slate-400 space-y-1.5 pt-1">
-                  <div className="flex items-center gap-2"><MapPin size={14} className="text-slate-500" /> <span>{s.address}</span></div>
-                  {s.contactPerson && <div className="text-slate-400">On-site Contact: <strong className="text-slate-200">{s.contactPerson}</strong></div>}
-                </div>
+        {/* Sites List Card */}
+        {(!isCustomersOnly) && (
+          <div className="glass-card p-5 border border-white/10 space-y-4 shadow-lg">
+            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <Map size={16} className="text-indigo-400" />
+                <h2 className="font-extrabold text-sm text-white">Building Sites</h2>
               </div>
-            ))}
+              <span className="text-xs font-bold text-indigo-400 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25">
+                {sites.length} Locations
+              </span>
+            </div>
+
+            <div className={isSitesOnly ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3 max-h-[620px] overflow-y-auto pr-1"}>
+              {sites.map(s => (
+                <div key={s.id} className="bg-slate-950/70 p-4 rounded-xl border border-white/5 space-y-2.5 hover:border-indigo-500/40 transition-all shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-white">{s.name}</h3>
+                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded-md border border-slate-800">{s.customerName}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1.5 pt-1">
+                    <div className="flex items-center gap-2"><MapPin size={13} className="text-slate-500 shrink-0" /> <span className="truncate">{s.address}</span></div>
+                    {s.contactPerson && <div className="text-slate-400">On-site Contact: <strong className="text-slate-200">{s.contactPerson}</strong></div>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Modal */}
+      {/* Creation Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="glass-card w-full max-w-lg p-6 space-y-5 border border-slate-700/80 shadow-2xl">
+          <div className="glass-card w-full max-w-lg p-6 space-y-5 border border-white/10 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-base text-white">
                 {modalType === 'customer' ? 'Create New Customer Organization' : 'Create New Site Location'}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white p-1">
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {formError && (
-              <div className="p-4 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl">
+              <div className="p-3 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl">
                 {formError}
               </div>
             )}
@@ -214,7 +245,7 @@ export const CustomerManagementPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="ks-label">HQ Address</label>
-                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="ks-input-plain" />
+                    <AddressInput value={address} onChange={setAddress} placeholder="Enter HQ street address..." />
                   </div>
                 </>
               ) : (
@@ -232,7 +263,7 @@ export const CustomerManagementPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="ks-label">Full Address *</label>
-                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="ks-input-plain" required />
+                    <AddressInput value={address} onChange={setAddress} placeholder="Enter building site address..." required />
                   </div>
                   <div>
                     <label className="ks-label">On-Site Contact Person</label>
@@ -252,3 +283,5 @@ export const CustomerManagementPage: React.FC = () => {
     </div>
   );
 };
+
+

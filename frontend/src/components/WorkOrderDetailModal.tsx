@@ -132,12 +132,12 @@ export const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ work
 
   return (
     <div className="modal-overlay">
-      <div className="glass-card w-full max-w-4xl p-6 sm:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto border border-slate-700/80 shadow-2xl">
+      <div className="glass-card w-full max-w-4xl p-6 sm:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
         {/* Modal Header */}
         <div className="flex items-start justify-between border-b border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-3">
-              <span className="font-mono text-lg font-black text-blue-400">{workOrder.code}</span>
+              <span className="font-mono text-base font-black text-cyan-400">{workOrder.code}</span>
               <span className={`badge badge-${workOrder.status.toLowerCase().replace('_', '-')}`}>
                 {workOrder.status}
               </span>
@@ -147,63 +147,64 @@ export const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ work
             </div>
             <h2 className="text-xl font-bold text-white mt-1">{workOrder.title}</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer">
-            <X size={20} />
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Banners */}
+        {/* Notification Banners */}
         {error && (
-          <div className="p-4 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl flex items-center justify-between">
+          <div className="p-3 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl flex items-center justify-between">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="text-red-400 font-bold ml-2">✕</button>
           </div>
         )}
         {successMsg && (
-          <div className="p-4 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs rounded-xl flex items-center justify-between">
+          <div className="p-3 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs rounded-xl flex items-center justify-between">
             <span>{successMsg}</span>
             <button onClick={() => setSuccessMsg(null)} className="text-emerald-400 font-bold ml-2">✕</button>
           </div>
         )}
 
-        {/* Tab Selector */}
+        {/* Tab Navigation Pills */}
         <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
           <button
             onClick={() => setActiveTab('details')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'details' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'details' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <FileText size={16} /> Ticket Details
+            <FileText size={15} /> Ticket Details
           </button>
 
           <button
             onClick={() => setActiveTab('parts')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'parts' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'parts' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Package size={16} /> Parts & Usage ({partUsages.length})
+            <Package size={15} /> Parts & Usage ({partUsages.length})
           </button>
 
           <button
             onClick={() => setActiveTab('time')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'time' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'time' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Clock size={16} /> Time Logs ({timeLogs.length})
+            <Clock size={15} /> Time Logs ({timeLogs.length})
           </button>
 
           <button
             onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'history' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'history' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <History size={16} /> Audit History ({history.length})
+            <History size={15} /> Audit History ({history.length})
           </button>
         </div>
+
 
         {/* Tab 1: Ticket Details & Action Panel */}
         {activeTab === 'details' && (

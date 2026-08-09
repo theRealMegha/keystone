@@ -70,30 +70,30 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({ isOp
 
   return (
     <div className="modal-overlay">
-      <div className="glass-card w-full max-w-xl p-8 space-y-6 relative max-h-[90vh] overflow-y-auto border border-slate-700/80 shadow-2xl">
+      <div className="glass-card w-full max-w-xl p-7 space-y-6 relative max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
-              <PlusCircle size={22} />
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <PlusCircle size={20} />
             </div>
             <div>
-              <h2 className="font-bold text-lg text-white">Create Work Order</h2>
+              <h2 className="font-bold text-base text-white">Create Work Order</h2>
               <p className="text-xs text-slate-400">Dispatch a new field ticket to technicians</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer">
-            <X size={20} />
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer">
+            <X size={18} />
           </button>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl flex items-center gap-2">
-            <AlertTriangle size={16} />
+          <div className="p-3 bg-red-950/80 border border-red-500/50 text-red-300 text-xs rounded-xl flex items-center gap-2">
+            <AlertTriangle size={15} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5 text-sm">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
             <label className="ks-label">Work Order Title *</label>
             <input
@@ -196,3 +196,4 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({ isOp
     </div>
   );
 };
+

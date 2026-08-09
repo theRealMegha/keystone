@@ -103,14 +103,16 @@ const MainLayout: React.FC = () => {
                             />
                         )}
 
-                        {currentTab === 'customers' && <CustomerManagementPage />}
+                        {currentTab === 'customers' && <CustomerManagementPage viewMode="customers" />}
+
+                        {currentTab === 'sites' && <CustomerManagementPage viewMode="sites" />}
 
                         {currentTab === 'inventory' && <InventoryManagementPage />}
 
                         {currentTab === 'users' && <UserManagementPage />}
 
                         {/* Fallback View if tab state doesn't match */}
-                        {!['dashboard', 'kanban', 'field', 'portal', 'customers', 'inventory', 'users'].includes(currentTab) && (
+                        {!['dashboard', 'kanban', 'field', 'portal', 'customers', 'sites', 'inventory', 'users'].includes(currentTab) && (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
                                 <h3 className="text-lg font-bold text-slate-300">Page Not Found</h3>
                                 <p className="text-xs text-slate-500">The selected tab could not be loaded.</p>

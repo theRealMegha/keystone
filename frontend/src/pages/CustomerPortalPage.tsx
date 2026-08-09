@@ -29,34 +29,35 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({ onSelect
   }, []);
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+    <div className="space-y-7 max-w-5xl mx-auto">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-white/5">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
-              <Users size={22} />
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Users size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-white tracking-tight">Customer Portal</h1>
+              <h1 className="text-2xl font-black text-white tracking-tight">Customer Portal</h1>
               <p className="text-xs text-slate-400">Log facility maintenance tickets and track real-time resolution status</p>
             </div>
           </div>
         </div>
-        <button onClick={onOpenCreateModal} className="ks-btn-primary h-10 text-xs px-5 w-auto">
-          <PlusCircle size={16} /> Request Service Ticket
+        <button onClick={onOpenCreateModal} className="ks-btn-primary h-9 text-xs px-4">
+          <PlusCircle size={15} /> Request Service Ticket
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-400 text-sm flex items-center justify-center gap-2">
-          <RefreshCw className="animate-spin text-blue-500" size={18} />
+        <div className="text-center py-16 text-slate-400 text-xs flex items-center justify-center gap-2 font-mono">
+          <RefreshCw className="animate-spin text-cyan-400" size={18} />
           <span>Fetching your organization's service requests...</span>
         </div>
       ) : customerOrders.length === 0 ? (
-        <div className="glass-card p-12 text-center text-slate-400 space-y-4">
-          <CheckCircle2 className="mx-auto text-blue-400" size={48} />
+        <div className="glass-card p-12 text-center text-slate-400 space-y-4 border border-white/10">
+          <CheckCircle2 className="mx-auto text-cyan-400" size={48} />
           <h3 className="font-bold text-lg text-white">No Active Requests</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">Need facility maintenance or technician support? Click the button above to log a new service ticket.</p>
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">Need facility maintenance or technician support? Click the button above to log a new service ticket.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -64,10 +65,10 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({ onSelect
             <div
               key={wo.id}
               onClick={() => onSelectWorkOrder(wo)}
-              className="glass-card p-5 rounded-2xl border border-slate-800 hover:border-blue-500/60 cursor-pointer transition-all space-y-3.5 shadow-md"
+              className="glass-card p-5 rounded-2xl border border-white/10 hover:border-cyan-500/50 cursor-pointer transition-all space-y-3.5 shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-sm font-black text-blue-400">{wo.code}</span>
+                <span className="font-mono text-sm font-black text-cyan-400">{wo.code}</span>
                 <span className={`badge badge-${wo.status.toLowerCase().replace('_', '-')}`}>
                   {wo.status}
                 </span>
@@ -75,15 +76,15 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({ onSelect
 
               <div>
                 <h3 className="font-bold text-base text-white">{wo.title}</h3>
-                <p className="text-xs text-slate-400 line-clamp-2 mt-1">{wo.description || 'No description provided.'}</p>
+                <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">{wo.description || 'No description provided.'}</p>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800/80">
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/5">
                 <div className="flex items-center gap-1.5">
                   <Building size={14} className="text-slate-500" />
                   <span className="font-semibold">{wo.siteName}</span>
                 </div>
-                <div className="flex items-center gap-1 text-blue-400 font-bold hover:underline">
+                <div className="flex items-center gap-1 text-cyan-400 font-bold hover:underline">
                   <span>Track Status</span>
                   <ChevronRight size={14} />
                 </div>
@@ -95,3 +96,4 @@ export const CustomerPortalPage: React.FC<CustomerPortalPageProps> = ({ onSelect
     </div>
   );
 };
+
