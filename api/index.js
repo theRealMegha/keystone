@@ -210,15 +210,23 @@ module.exports = async (req, res) => {
   }
 
   const rawUrl = req.url || '';
-  const cleanPath = rawUrl.split('?')[0].replace(/\/+$/, '');
-  const pathname = cleanPath.startsWith('/api') ? cleanPath : '/api' + cleanPath;
+  let pathOnly = rawUrl.split('?')[0].replace(/\/+$/, '');
+  
+  if (pathOnly === '/api/index' || pathOnly === '/api/index.js' || pathOnly === '') {
+    const matchedHeader = req.headers['x-matched-path'] || req.headers['x-rewrite-url'] || req.headers['x-now-route-matches'];
+    if (matchedHeader) {
+      pathOnly = matchedHeader.split('?')[0].replace(/\/+$/, '');
+    }
+  }
+
+  const pathname = pathOnly.startsWith('/api') ? pathOnly : '/api' + pathOnly;
   const method = req.method;
 
   try {
     // ----------------------------------------------------
     // AUTH ROUTES
     // ----------------------------------------------------
-    if (pathname === '/api/auth/login' && method === 'POST') {
+    if ((pathname === '/api/auth/login' || pathname.endsWith('/auth/login')) && method === 'POST') {
       const { email, password } = await parseJsonBody(req);
       const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userRes.rows.length === 0) {
@@ -239,7 +247,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (pathname === '/api/auth/me' && method === 'GET') {
+    if ((pathname === '/api/auth/me' || pathname.endsWith('/auth/me')) && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const userRes = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users WHERE id = $1', [decoded.id]);
@@ -247,7 +255,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(userRes.rows[0]);
     }
 
-    if (pathname === '/api/auth/forgot-password' && method === 'POST') {
+    if ((pathname === '/api/auth/forgot-password' || pathname.endsWith('/auth/forgot-password')) && method === 'POST') {
       const { email } = await parseJsonBody(req);
       const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userRes.rows.length === 0) {
@@ -256,7 +264,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({ message: 'Password reset link sent to registered email' });
     }
 
-    if (pathname === '/api/auth/reset-password' && method === 'POST') {
+    if ((pathname === '/api/auth/reset-password' || pathname.endsWith('/auth/reset-password')) && method === 'POST') {
       const { token, newPassword } = await parseJsonBody(req);
       if (!newPassword || newPassword.length < 6) {
         return res.status(400).json({ message: 'New password must be at least 6 characters' });
@@ -267,24 +275,7 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // WORK ORDERS ROUTES
     // ----------------------------------------------------
-    if (pathname === '/api/work-orders' && method === 'GET') {
-      const query = `
-        SELECT wo.id, wo.code, wo.title, wo.description, wo.priority, wo.status,
-               wo.total_parts_cost as "totalPartsCost", wo.total_labour_minutes as "totalLabourMinutes",
-               wo.sla_due_at as "slaDueAt", wo.created_at as "createdAt",
-               c.name as "customerName", s.name as "siteName", u.full_name as "assignedToName",
-               (wo.sla_due_at IS NOT NULL AND wo.sla_due_at < NOW() AND wo.status NOT IN ('COMPLETED', 'CLOSED', 'CANCELLED')) as "slaBreached"
-        FROM work_orders wo
-        LEFT JOIN customers c ON wo.customer_id = c.id
-        LEFT JOIN sites s ON wo.site_id = s.id
-        LEFT JOIN users u ON wo.assigned_to_id = u.id
-        ORDER BY wo.id DESC
-      `;
-      const wos = await pool.query(query);
-      return res.status(200).json(wos.rows);
-    }
-
-    if (pathname === '/api/work-orders/my' && method === 'GET') {
+    if ((pathname === '/api/work-orders/my' || pathname.endsWith('/work-orders/my')) && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const query = `
@@ -304,7 +295,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(wos.rows);
     }
 
-    if (pathname === '/api/work-orders/customer' && method === 'GET') {
+    if ((pathname === '/api/work-orders/customer' || pathname.endsWith('/work-orders/customer')) && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const query = `
@@ -322,7 +313,24 @@ module.exports = async (req, res) => {
       return res.status(200).json(wos.rows);
     }
 
-    if (pathname === '/api/work-orders' && method === 'POST') {
+    if ((pathname === '/api/work-orders' || pathname.endsWith('/work-orders')) && method === 'GET') {
+      const query = `
+        SELECT wo.id, wo.code, wo.title, wo.description, wo.priority, wo.status,
+               wo.total_parts_cost as "totalPartsCost", wo.total_labour_minutes as "totalLabourMinutes",
+               wo.sla_due_at as "slaDueAt", wo.created_at as "createdAt",
+               c.name as "customerName", s.name as "siteName", u.full_name as "assignedToName",
+               (wo.sla_due_at IS NOT NULL AND wo.sla_due_at < NOW() AND wo.status NOT IN ('COMPLETED', 'CLOSED', 'CANCELLED')) as "slaBreached"
+        FROM work_orders wo
+        LEFT JOIN customers c ON wo.customer_id = c.id
+        LEFT JOIN sites s ON wo.site_id = s.id
+        LEFT JOIN users u ON wo.assigned_to_id = u.id
+        ORDER BY wo.id DESC
+      `;
+      const wos = await pool.query(query);
+      return res.status(200).json(wos.rows);
+    }
+
+    if ((pathname === '/api/work-orders' || pathname.endsWith('/work-orders')) && method === 'POST') {
       const body = await parseJsonBody(req);
       const code = `WO-${Math.floor(1000 + Math.random() * 9000)}`;
       const result = await pool.query(
@@ -336,12 +344,12 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // CUSTOMERS & SITES ROUTES
     // ----------------------------------------------------
-    if (pathname === '/api/customers' && method === 'GET') {
+    if ((pathname === '/api/customers' || pathname.endsWith('/customers')) && method === 'GET') {
       const customers = await pool.query('SELECT id, name, code, contact_email as "contactEmail", contact_phone as "contactPhone", address, active FROM customers ORDER BY id ASC');
       return res.status(200).json(customers.rows);
     }
 
-    if (pathname === '/api/customers' && method === 'POST') {
+    if ((pathname === '/api/customers' || pathname.endsWith('/customers')) && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO customers (name, code, contact_email, contact_phone, address, active) VALUES ($1, $2, $3, $4, $5, true) RETURNING *',
@@ -350,7 +358,7 @@ module.exports = async (req, res) => {
       return res.status(201).json(result.rows[0]);
     }
 
-    if (pathname === '/api/sites' && method === 'GET') {
+    if ((pathname === '/api/sites' || pathname.endsWith('/sites')) && method === 'GET') {
       const sites = await pool.query(`
         SELECT s.id, s.name, s.address, s.customer_id as "customerId", s.contact_person as "contactPerson", s.active, c.name as "customerName"
         FROM sites s LEFT JOIN customers c ON s.customer_id = c.id ORDER BY s.id ASC
@@ -358,7 +366,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(sites.rows);
     }
 
-    if (pathname === '/api/sites' && method === 'POST') {
+    if ((pathname === '/api/sites' || pathname.endsWith('/sites')) && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO sites (name, address, customer_id, contact_person, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
@@ -370,12 +378,12 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // PARTS / INVENTORY ROUTES
     // ----------------------------------------------------
-    if (pathname === '/api/parts' && method === 'GET') {
+    if ((pathname === '/api/parts' || pathname.endsWith('/parts')) && method === 'GET') {
       const parts = await pool.query('SELECT id, name, sku, unit_cost::float as "unitCost", stock_qty as "stockQty", min_stock_level as "minStockLevel" FROM parts ORDER BY id ASC');
       return res.status(200).json(parts.rows);
     }
 
-    if (pathname === '/api/parts' && method === 'POST') {
+    if ((pathname === '/api/parts' || pathname.endsWith('/parts')) && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO parts (name, sku, unit_cost, stock_qty, min_stock_level) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -387,7 +395,7 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // REPORTS & METRICS ROUTES
     // ----------------------------------------------------
-    if (pathname === '/api/reports/dashboard' && method === 'GET') {
+    if ((pathname === '/api/reports/dashboard' || pathname.endsWith('/reports/dashboard')) && method === 'GET') {
       const totalWos = await pool.query('SELECT COUNT(*) FROM work_orders');
       const newWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'NEW'");
       const assignedWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'ASSIGNED'");
@@ -410,18 +418,18 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (pathname === '/api/reports/technicians' && method === 'GET') {
+    if ((pathname === '/api/reports/technicians' || pathname.endsWith('/reports/technicians')) && method === 'GET') {
       const techs = await pool.query("SELECT id, email, full_name as \"fullName\", role, phone, active FROM users WHERE role = 'TECHNICIAN'");
       return res.status(200).json(techs.rows);
     }
 
-    if (pathname === '/api/reports/users' && method === 'GET') {
+    if ((pathname === '/api/reports/users' || pathname.endsWith('/reports/users')) && method === 'GET') {
       const users = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users ORDER BY id ASC');
       return res.status(200).json(users.rows);
     }
 
-    // Fallback response for unhandled API paths
-    return res.status(200).json({ message: 'KEYSTONE Vercel Serverless API Running', path: pathname });
+    // Fallback response for unhandled API paths (Always return 200 JSON, NEVER 405)
+    return res.status(200).json({ message: 'KEYSTONE Vercel Serverless API Active', path: pathname, method: method });
   } catch (err) {
     console.error('API Error:', err);
     return res.status(500).json({ error: 'Internal Server Error', message: err.message });
