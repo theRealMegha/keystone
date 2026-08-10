@@ -6,18 +6,26 @@ const bcrypt = require('bcryptjs');
 const NEON_DB_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_Ctas5FN8JXnv@ep-autumn-lab-axa83nen-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 const JWT_SECRET = process.env.JWT_SECRET || 'keystone_jwt_secret_key_2026';
 
-const pool = new Pool({
-  connectionString: NEON_DB_URL,
-  ssl: { rejectUnauthorized: false }
-});
+let pool;
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: NEON_DB_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000
+    });
+  }
+  return pool;
+}
 
 // Initialize Neon Database Schema & Seed Data if empty
 let isDbInitialized = false;
 
 async function initDb() {
   if (isDbInitialized) return;
+  const p = getPool();
   try {
-    await pool.query(`
+    await p.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(100) UNIQUE NOT NULL,
@@ -110,11 +118,11 @@ async function initDb() {
       );
     `);
 
-    const userCheck = await pool.query(`SELECT COUNT(*) FROM users`);
+    const userCheck = await p.query(`SELECT COUNT(*) FROM users`);
     if (parseInt(userCheck.rows[0].count, 10) === 0) {
       const defaultHash = await bcrypt.hash('password123', 10);
 
-      await pool.query(`
+      await p.query(`
         INSERT INTO users (email, password_hash, full_name, role, phone, active) VALUES
         ('admin@meridian.com', '${defaultHash}', 'Marcus Vance (Manager)', 'ADMIN', '+1-555-0101', true),
         ('dispatcher@meridian.com', '${defaultHash}', 'Diana Ross (Dispatcher)', 'DISPATCHER', '+1-555-0102', true),
@@ -205,8 +213,6 @@ async function parseJsonBody(req) {
 
 // Vercel Serverless Function Entry Point
 module.exports = async (req, res) => {
-  await initDb();
-
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -217,26 +223,29 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const rawUrl = req.url || '';
-  let pathOnly = rawUrl.split('?')[0].replace(/\/+$/, '');
-  
-  if (pathOnly === '/api/index' || pathOnly === '/api/index.js' || pathOnly === '') {
-    const matchedHeader = req.headers['x-matched-path'] || req.headers['x-rewrite-url'] || req.headers['x-now-route-matches'];
-    if (matchedHeader) {
-      pathOnly = matchedHeader.split('?')[0].replace(/\/+$/, '');
-    }
-  }
-
-  const pathname = pathOnly.startsWith('/api') ? pathOnly : '/api' + pathOnly;
-  const method = req.method;
-
   try {
+    await initDb();
+    const p = getPool();
+
+    const rawUrl = req.url || '';
+    let pathOnly = rawUrl.split('?')[0].replace(/\/+$/, '');
+    
+    if (pathOnly === '/api/index' || pathOnly === '/api/index.js' || pathOnly === '') {
+      const matchedHeader = req.headers['x-matched-path'] || req.headers['x-rewrite-url'] || req.headers['x-now-route-matches'];
+      if (matchedHeader) {
+        pathOnly = matchedHeader.split('?')[0].replace(/\/+$/, '');
+      }
+    }
+
+    const pathname = pathOnly.startsWith('/api') ? pathOnly : '/api' + pathOnly;
+    const method = req.method;
+
     // ----------------------------------------------------
     // AUTH ROUTES
     // ----------------------------------------------------
     if ((pathname === '/api/auth/login' || pathname.endsWith('/auth/login')) && method === 'POST') {
       const { email, password } = await parseJsonBody(req);
-      const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      const userRes = await p.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userRes.rows.length === 0) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -258,14 +267,14 @@ module.exports = async (req, res) => {
     if ((pathname === '/api/auth/me' || pathname.endsWith('/auth/me')) && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
-      const userRes = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users WHERE id = $1', [decoded.id]);
+      const userRes = await p.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users WHERE id = $1', [decoded.id]);
       if (userRes.rows.length === 0) return res.status(404).json({ message: 'User not found' });
       return res.status(200).json(userRes.rows[0]);
     }
 
     if ((pathname === '/api/auth/forgot-password' || pathname.endsWith('/auth/forgot-password')) && method === 'POST') {
       const { email } = await parseJsonBody(req);
-      const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      const userRes = await p.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userRes.rows.length === 0) {
         return res.status(404).json({ message: 'User not found with this email address' });
       }
@@ -299,7 +308,7 @@ module.exports = async (req, res) => {
         WHERE wo.assigned_to_id = $1
         ORDER BY wo.id DESC
       `;
-      const wos = await pool.query(query, [decoded.id]);
+      const wos = await p.query(query, [decoded.id]);
       return res.status(200).json(wos.rows);
     }
 
@@ -317,7 +326,7 @@ module.exports = async (req, res) => {
         LEFT JOIN users u ON wo.assigned_to_id = u.id
         ORDER BY wo.id DESC
       `;
-      const wos = await pool.query(query);
+      const wos = await p.query(query);
       return res.status(200).json(wos.rows);
     }
 
@@ -334,14 +343,14 @@ module.exports = async (req, res) => {
         LEFT JOIN users u ON wo.assigned_to_id = u.id
         ORDER BY wo.id DESC
       `;
-      const wos = await pool.query(query);
+      const wos = await p.query(query);
       return res.status(200).json(wos.rows);
     }
 
     if ((pathname === '/api/work-orders' || pathname.endsWith('/work-orders')) && method === 'POST') {
       const body = await parseJsonBody(req);
       const code = `WO-${Math.floor(1000 + Math.random() * 9000)}`;
-      const result = await pool.query(
+      const result = await p.query(
         `INSERT INTO work_orders (code, title, description, priority, status, customer_id, site_id, assigned_to_id, sla_due_at)
          VALUES ($1, $2, $3, $4, 'NEW', $5, $6, $7, NOW() + INTERVAL '24 hour') RETURNING *`,
         [code, body.title, body.description, body.priority || 'MEDIUM', body.customerId || 1, body.siteId || 1, body.assignedToId || null]
@@ -353,13 +362,13 @@ module.exports = async (req, res) => {
     // CUSTOMERS & SITES ROUTES
     // ----------------------------------------------------
     if ((pathname === '/api/customers' || pathname.endsWith('/customers')) && method === 'GET') {
-      const customers = await pool.query('SELECT id, name, code, contact_email as "contactEmail", contact_phone as "contactPhone", address, active FROM customers ORDER BY id ASC');
+      const customers = await p.query('SELECT id, name, code, contact_email as "contactEmail", contact_phone as "contactPhone", address, active FROM customers ORDER BY id ASC');
       return res.status(200).json(customers.rows);
     }
 
     if ((pathname === '/api/customers' || pathname.endsWith('/customers')) && method === 'POST') {
       const body = await parseJsonBody(req);
-      const result = await pool.query(
+      const result = await p.query(
         'INSERT INTO customers (name, code, contact_email, contact_phone, address, active) VALUES ($1, $2, $3, $4, $5, true) RETURNING *',
         [body.name, body.code, body.contactEmail, body.contactPhone, body.address]
       );
@@ -367,7 +376,7 @@ module.exports = async (req, res) => {
     }
 
     if ((pathname === '/api/sites' || pathname.endsWith('/sites')) && method === 'GET') {
-      const sites = await pool.query(`
+      const sites = await p.query(`
         SELECT s.id, s.name, s.address, s.customer_id as "customerId", s.contact_person as "contactPerson", s.active, c.name as "customerName"
         FROM sites s LEFT JOIN customers c ON s.customer_id = c.id ORDER BY s.id ASC
       `);
@@ -376,7 +385,7 @@ module.exports = async (req, res) => {
 
     if ((pathname === '/api/sites' || pathname.endsWith('/sites')) && method === 'POST') {
       const body = await parseJsonBody(req);
-      const result = await pool.query(
+      const result = await p.query(
         'INSERT INTO sites (name, address, customer_id, contact_person, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
         [body.name, body.address, body.customerId, body.contactPerson]
       );
@@ -387,13 +396,13 @@ module.exports = async (req, res) => {
     // PARTS / INVENTORY ROUTES
     // ----------------------------------------------------
     if ((pathname === '/api/parts' || pathname.endsWith('/parts')) && method === 'GET') {
-      const parts = await pool.query('SELECT id, name, sku, unit_cost::float as "unitCost", stock_qty as "stockQty", min_stock_level as "minStockLevel" FROM parts ORDER BY id ASC');
+      const parts = await p.query('SELECT id, name, sku, unit_cost::float as "unitCost", stock_qty as "stockQty", min_stock_level as "minStockLevel" FROM parts ORDER BY id ASC');
       return res.status(200).json(parts.rows);
     }
 
     if ((pathname === '/api/parts' || pathname.endsWith('/parts')) && method === 'POST') {
       const body = await parseJsonBody(req);
-      const result = await pool.query(
+      const result = await p.query(
         'INSERT INTO parts (name, sku, unit_cost, stock_qty, min_stock_level) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [body.name, body.sku, body.unitCost, body.stockQty, body.minStockLevel || 5]
       );
@@ -404,11 +413,11 @@ module.exports = async (req, res) => {
     // REPORTS & METRICS ROUTES
     // ----------------------------------------------------
     if ((pathname === '/api/reports/dashboard' || pathname.endsWith('/reports/dashboard')) && method === 'GET') {
-      const totalWos = await pool.query('SELECT COUNT(*) FROM work_orders');
-      const newWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'NEW'");
-      const assignedWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'ASSIGNED'");
-      const breachedWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE sla_due_at IS NOT NULL AND sla_due_at < NOW() AND status NOT IN ('COMPLETED', 'CLOSED', 'CANCELLED')");
-      const lowStock = await pool.query("SELECT COUNT(*) FROM parts WHERE stock_qty <= min_stock_level");
+      const totalWos = await p.query('SELECT COUNT(*) FROM work_orders');
+      const newWos = await p.query("SELECT COUNT(*) FROM work_orders WHERE status = 'NEW'");
+      const assignedWos = await p.query("SELECT COUNT(*) FROM work_orders WHERE status = 'ASSIGNED'");
+      const breachedWos = await p.query("SELECT COUNT(*) FROM work_orders WHERE sla_due_at IS NOT NULL AND sla_due_at < NOW() AND status NOT IN ('COMPLETED', 'CLOSED', 'CANCELLED')");
+      const lowStock = await p.query("SELECT COUNT(*) FROM parts WHERE stock_qty <= min_stock_level");
 
       const total = parseInt(totalWos.rows[0].count, 10);
       const breached = parseInt(breachedWos.rows[0].count, 10);
@@ -427,19 +436,19 @@ module.exports = async (req, res) => {
     }
 
     if ((pathname === '/api/reports/technicians' || pathname.endsWith('/reports/technicians')) && method === 'GET') {
-      const techs = await pool.query("SELECT id, email, full_name as \"fullName\", role, phone, active FROM users WHERE role = 'TECHNICIAN'");
+      const techs = await p.query("SELECT id, email, full_name as \"fullName\", role, phone, active FROM users WHERE role = 'TECHNICIAN'");
       return res.status(200).json(techs.rows);
     }
 
     if ((pathname === '/api/reports/users' || pathname.endsWith('/reports/users')) && method === 'GET') {
-      const users = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users ORDER BY id ASC');
+      const users = await p.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users ORDER BY id ASC');
       return res.status(200).json(users.rows);
     }
 
     // Fallback response for unhandled API paths (Always return 200 JSON, NEVER 405)
     return res.status(200).json({ message: 'KEYSTONE Vercel Serverless API Active', path: pathname, method: method });
   } catch (err) {
-    console.error('API Error:', err);
-    return res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    console.error('API Serverless Error:', err);
+    return res.status(500).json({ error: 'Server Error', message: err.message });
   }
 };
