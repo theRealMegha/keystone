@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
-import { UserCog, RefreshCw, Shield, UserCheck } from 'lucide-react';
+import { UserCog, RefreshCw } from 'lucide-react';
 
 export const UserManagementPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,25 +22,25 @@ export const UserManagementPage: React.FC = () => {
   return (
     <div className="space-y-7">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-white/5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-200">
               <UserCog size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">Platform User Directory</h1>
-              <p className="text-xs text-slate-400">View users across all RBAC roles: Admin, Dispatcher, Technician, Customer</p>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Platform User Directory</h1>
+              <p className="text-xs text-slate-500">View users across all RBAC roles: Admin, Dispatcher, Technician, Customer</p>
             </div>
           </div>
         </div>
-        <button onClick={loadUsers} className="ks-btn-secondary text-xs h-9 px-3.5">
-          <RefreshCw size={14} className={loading ? 'animate-spin text-purple-400' : 'text-purple-400'} /> Refresh Directory
+        <button onClick={loadUsers} className="ks-btn-secondary text-xs h-9 px-3.5 shadow-2xs">
+          <RefreshCw size={14} className={loading ? 'animate-spin text-purple-600' : 'text-purple-600'} /> Refresh Directory
         </button>
       </div>
 
       {/* Modern SaaS Table */}
-      <div className="glass-card border border-white/10 overflow-hidden shadow-lg">
+      <div className="glass-card border border-slate-200 overflow-hidden shadow-xs bg-white">
         <div className="overflow-x-auto">
           <table className="ks-table">
             <thead>
@@ -56,18 +56,18 @@ export const UserManagementPage: React.FC = () => {
             <tbody>
               {users.map(u => (
                 <tr key={u.id}>
-                  <td className="font-mono text-slate-500 font-bold">#{u.id}</td>
+                  <td className="font-mono text-slate-400 font-bold">#{u.id}</td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                         {u.fullName.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-bold text-white leading-tight">{u.fullName}</div>
+                        <div className="font-bold text-slate-900 leading-tight">{u.fullName}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="font-mono text-cyan-400 font-semibold">{u.email}</td>
+                  <td className="font-mono text-sky-700 font-semibold">{u.email}</td>
                   <td>
                     <span className={`badge ${
                       u.role === 'ADMIN' ? 'badge-urgent' :
@@ -77,10 +77,10 @@ export const UserManagementPage: React.FC = () => {
                       {u.role}
                     </span>
                   </td>
-                  <td className="text-slate-400">{u.phone || '—'}</td>
+                  <td className="text-slate-500">{u.phone || '—'}</td>
                   <td>
                     <span className="badge badge-completed flex items-center gap-1 w-max">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
                     </span>
                   </td>
                 </tr>
@@ -92,4 +92,3 @@ export const UserManagementPage: React.FC = () => {
     </div>
   );
 };
-

@@ -48,9 +48,9 @@ const MainLayout: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-3 text-slate-400 text-sm">
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-3 text-slate-600 text-sm">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>Initializing KEYSTONE session...</span>
+                <span className="font-medium text-slate-600">Initializing KEYSTONE session...</span>
             </div>
         );
     }
@@ -71,7 +71,7 @@ const MainLayout: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
             <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
             <div className="flex flex-1 overflow-hidden">
@@ -114,11 +114,11 @@ const MainLayout: React.FC = () => {
                         {/* Fallback View if tab state doesn't match */}
                         {!['dashboard', 'kanban', 'field', 'portal', 'customers', 'sites', 'inventory', 'users'].includes(currentTab) && (
                             <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
-                                <h3 className="text-lg font-bold text-slate-300">Page Not Found</h3>
+                                <h3 className="text-lg font-bold text-slate-700">Page Not Found</h3>
                                 <p className="text-xs text-slate-500">The selected tab could not be loaded.</p>
                                 <button
                                     onClick={() => setCurrentTab('dashboard')}
-                                    className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all"
+                                    className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
                                 >
                                     Return to Dashboard
                                 </button>
