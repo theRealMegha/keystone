@@ -1,7 +1,10 @@
-require('dotenv').config();
-const { Pool } = require('pg');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+import pg from 'pg';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+
+dotenv.config();
+const { Pool } = pg;
 
 const NEON_DB_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_Ctas5FN8JXnv@ep-autumn-lab-axa83nen-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 const JWT_SECRET = process.env.JWT_SECRET || 'keystone_jwt_secret_key_2026';
@@ -211,8 +214,8 @@ async function parseJsonBody(req) {
   });
 }
 
-// Vercel Serverless Function Entry Point
-module.exports = async (req, res) => {
+// Vercel Serverless Function Entry Point (ES Module Export)
+export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -451,4 +454,4 @@ module.exports = async (req, res) => {
     console.error('API Serverless Error:', err);
     return res.status(500).json({ error: 'Server Error', message: err.message });
   }
-};
+}
