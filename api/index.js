@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const NEON_DB_URL = process.env.DATABASE_URL;
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'keystone_jwt_secret_key_2026';
 
 const pool = new Pool({
   connectionString: NEON_DB_URL,
@@ -209,14 +209,16 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const url = req.url || '';
+  const rawUrl = req.url || '';
+  const cleanPath = rawUrl.split('?')[0].replace(/\/+$/, '');
+  const pathname = cleanPath.startsWith('/api') ? cleanPath : '/api' + cleanPath;
   const method = req.method;
 
   try {
     // ----------------------------------------------------
     // AUTH ROUTES
     // ----------------------------------------------------
-    if (url.startsWith('/api/auth/login') && method === 'POST') {
+    if (pathname === '/api/auth/login' && method === 'POST') {
       const { email, password } = await parseJsonBody(req);
       const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userRes.rows.length === 0) {
@@ -237,7 +239,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (url.startsWith('/api/auth/me') && method === 'GET') {
+    if (pathname === '/api/auth/me' && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const userRes = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users WHERE id = $1', [decoded.id]);
@@ -248,7 +250,7 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // WORK ORDERS ROUTES
     // ----------------------------------------------------
-    if (url === '/api/work-orders' && method === 'GET') {
+    if (pathname === '/api/work-orders' && method === 'GET') {
       const query = `
         SELECT wo.id, wo.code, wo.title, wo.description, wo.priority, wo.status,
                wo.total_parts_cost as "totalPartsCost", wo.total_labour_minutes as "totalLabourMinutes",
@@ -265,7 +267,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(wos.rows);
     }
 
-    if (url === '/api/work-orders/my' && method === 'GET') {
+    if (pathname === '/api/work-orders/my' && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const query = `
@@ -285,7 +287,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(wos.rows);
     }
 
-    if (url === '/api/work-orders/customer' && method === 'GET') {
+    if (pathname === '/api/work-orders/customer' && method === 'GET') {
       const decoded = authenticateToken(req);
       if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
       const query = `
@@ -303,7 +305,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(wos.rows);
     }
 
-    if (url === '/api/work-orders' && method === 'POST') {
+    if (pathname === '/api/work-orders' && method === 'POST') {
       const body = await parseJsonBody(req);
       const code = `WO-${Math.floor(1000 + Math.random() * 9000)}`;
       const result = await pool.query(
@@ -317,12 +319,12 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // CUSTOMERS & SITES ROUTES
     // ----------------------------------------------------
-    if (url === '/api/customers' && method === 'GET') {
+    if (pathname === '/api/customers' && method === 'GET') {
       const customers = await pool.query('SELECT id, name, code, contact_email as "contactEmail", contact_phone as "contactPhone", address, active FROM customers ORDER BY id ASC');
       return res.status(200).json(customers.rows);
     }
 
-    if (url === '/api/customers' && method === 'POST') {
+    if (pathname === '/api/customers' && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO customers (name, code, contact_email, contact_phone, address, active) VALUES ($1, $2, $3, $4, $5, true) RETURNING *',
@@ -331,7 +333,7 @@ module.exports = async (req, res) => {
       return res.status(201).json(result.rows[0]);
     }
 
-    if (url === '/api/sites' && method === 'GET') {
+    if (pathname === '/api/sites' && method === 'GET') {
       const sites = await pool.query(`
         SELECT s.id, s.name, s.address, s.customer_id as "customerId", s.contact_person as "contactPerson", s.active, c.name as "customerName"
         FROM sites s LEFT JOIN customers c ON s.customer_id = c.id ORDER BY s.id ASC
@@ -339,7 +341,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(sites.rows);
     }
 
-    if (url === '/api/sites' && method === 'POST') {
+    if (pathname === '/api/sites' && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO sites (name, address, customer_id, contact_person, active) VALUES ($1, $2, $3, $4, true) RETURNING *',
@@ -351,12 +353,12 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // PARTS / INVENTORY ROUTES
     // ----------------------------------------------------
-    if (url === '/api/parts' && method === 'GET') {
+    if (pathname === '/api/parts' && method === 'GET') {
       const parts = await pool.query('SELECT id, name, sku, unit_cost::float as "unitCost", stock_qty as "stockQty", min_stock_level as "minStockLevel" FROM parts ORDER BY id ASC');
       return res.status(200).json(parts.rows);
     }
 
-    if (url === '/api/parts' && method === 'POST') {
+    if (pathname === '/api/parts' && method === 'POST') {
       const body = await parseJsonBody(req);
       const result = await pool.query(
         'INSERT INTO parts (name, sku, unit_cost, stock_qty, min_stock_level) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -368,7 +370,7 @@ module.exports = async (req, res) => {
     // ----------------------------------------------------
     // REPORTS & METRICS ROUTES
     // ----------------------------------------------------
-    if (url === '/api/reports/dashboard' && method === 'GET') {
+    if (pathname === '/api/reports/dashboard' && method === 'GET') {
       const totalWos = await pool.query('SELECT COUNT(*) FROM work_orders');
       const newWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'NEW'");
       const assignedWos = await pool.query("SELECT COUNT(*) FROM work_orders WHERE status = 'ASSIGNED'");
@@ -391,18 +393,18 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (url === '/api/reports/technicians' && method === 'GET') {
+    if (pathname === '/api/reports/technicians' && method === 'GET') {
       const techs = await pool.query("SELECT id, email, full_name as \"fullName\", role, phone, active FROM users WHERE role = 'TECHNICIAN'");
       return res.status(200).json(techs.rows);
     }
 
-    if (url === '/api/reports/users' && method === 'GET') {
+    if (pathname === '/api/reports/users' && method === 'GET') {
       const users = await pool.query('SELECT id, email, full_name as "fullName", role, phone, active FROM users ORDER BY id ASC');
       return res.status(200).json(users.rows);
     }
 
     // Fallback response for unhandled API paths
-    return res.status(200).json({ message: 'KEYSTONE Vercel Serverless API Running' });
+    return res.status(200).json({ message: 'KEYSTONE Vercel Serverless API Running', path: pathname });
   } catch (err) {
     console.error('API Error:', err);
     return res.status(500).json({ error: 'Internal Server Error', message: err.message });
