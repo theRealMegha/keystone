@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 dotenv.config();
 const { Pool } = pg;
 
-const NEON_DB_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_Ctas5FN8JXnv@ep-autumn-lab-axa83nen-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const NEON_DB_URL = process.env.DATABASE_URL;
 const JWT_SECRET = process.env.JWT_SECRET || 'keystone_jwt_secret_key_2026';
 
 let pool;
